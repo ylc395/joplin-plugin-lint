@@ -95,8 +95,10 @@ export class Linter {
       filters: successFiltersNames.map(toRule),
     };
 
-    console.log(this.installations);
-    console.log(this.config);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(this.installations);
+      console.log(this.config);
+    }
   }
 
   lint(text: string): Promise<TextlintResult> {

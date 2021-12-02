@@ -2,6 +2,7 @@
   "name": "joplin-plugin-textlint",
   "version": "1.0.0",
   "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack --joplin-plugin-config buildMain && cross-env NODE_ENV=development webpack --joplin-plugin-config buildExtraScripts && cross-env NODE_ENV=development  webpack --joplin-plugin-config createArchive",
     "dist": "webpack --joplin-plugin-config buildMain && webpack --joplin-plugin-config buildExtraScripts && webpack --joplin-plugin-config createArchive",
     "prepare": "npm run dist",
     "update": "npm install -g generator-joplin && yo joplin --update"
@@ -21,6 +22,7 @@
     "@types/pacote": "^11.1.1",
     "chalk": "^4.1.0",
     "copy-webpack-plugin": "^6.1.0",
+    "cross-env": "^7.0.3",
     "fs-extra": "^9.0.1",
     "glob": "^7.1.6",
     "on-build-webpack": "^0.1.0",
