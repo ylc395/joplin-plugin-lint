@@ -24,15 +24,8 @@ interface Installations {
 
 export class Linter {
   installations?: Installations;
-  private textlintKernel = new TextlintKernel();
-  private config?: {
-    rules: TextlintKernelRule[];
-    filters: TextlintKernelFilterRule[];
-  };
-
-  constructor() {
-    this.install();
-  }
+  private readonly textlintKernel = new TextlintKernel();
+  private config = this.install();
 
   async install() {
     const dataDir = await joplin.plugins.dataDir();
@@ -42,7 +35,7 @@ export class Linter {
     try {
       config = await fs.readJson(join(dataDir, '.textlintrc.json'));
     } catch {
-      return;
+      return { filters: [], rules: [] };
     }
 
     const pluginManager = new PluginManager({
@@ -90,27 +83,27 @@ export class Linter {
       options: config.rules[shortName],
     });
 
-    this.config = {
+    const finalConfig = {
       rules: successRuleNames.map(toRule),
       filters: successFiltersNames.map(toRule),
     };
 
     if (process.env.NODE_ENV === 'development') {
       console.log(this.installations);
-      console.log(this.config);
+      console.log(finalConfig);
     }
+
+    return finalConfig;
   }
 
-  lint(text: string): Promise<TextlintResult> {
-    if (!this.config) {
-      return Promise.resolve({ filePath: '', messages: [] });
-    }
+  async lint(text: string): Promise<TextlintResult> {
+    const config = await this.config;
 
     return this.textlintKernel.lintText(text, {
       ext: '.md',
       plugins: [{ pluginId: 'markdown', plugin: MarkdownPlugin }],
-      rules: this.config.rules,
-      filterRules: this.config.filters,
+      rules: config.rules,
+      filterRules: config.filters,
     });
   }
 }
