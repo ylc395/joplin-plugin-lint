@@ -40,7 +40,7 @@ export default function (context: Context) {
           const results = lintResults.messages.map(
             ({ severity, message, ruleId, line, column }) => ({
               severity: convertSeverity(severity),
-              message: `${ruleId}: ${message}`,
+              message: `[${ruleId}] ${message}`,
               from: { line: line - 1, ch: column - 1 },
               to: { line: line - 1, ch: column },
             }),

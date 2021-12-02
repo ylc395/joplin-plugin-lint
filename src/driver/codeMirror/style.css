@@ -14,15 +14,10 @@
   padding: 2px 5px;
   position: fixed;
   white-space: pre;
-  white-space: pre-wrap;
   z-index: 100;
   max-width: 600px;
   opacity: 0;
   transition: opacity 0.4s;
-  -moz-transition: opacity 0.4s;
-  -webkit-transition: opacity 0.4s;
-  -o-transition: opacity 0.4s;
-  -ms-transition: opacity 0.4s;
 }
 
 .CodeMirror-lint-mark {
