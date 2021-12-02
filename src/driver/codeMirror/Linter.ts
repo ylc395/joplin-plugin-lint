@@ -1,4 +1,6 @@
 import type { Editor, Position } from 'codemirror';
+import ExclamationTriangle from 'bootstrap-icons/icons/exclamation-triangle.svg';
+import XCircle from 'bootstrap-icons/icons/x-circle.svg';
 import type { LintRequest } from '../joplin/request';
 import type { Linter as TextLinter } from '../joplin/Linter';
 
@@ -44,8 +46,18 @@ function convertSeverity(severity: number): CodeMirrorLintMessage['severity'] {
   }
 }
 
+const PANEL_CLASS_NAME = 'textlint-panel';
+const PANEL_ITEM_CLASS_NAME = 'textlint-panel-item';
+const ERROR_COUNTER_CLASS_NAME = 'textlint-panel-error-counter';
+const WARNING_COUNTER_CLASS_NAME = 'textlint-panel-warning-counter';
+
 export class Linter {
-  constructor(private readonly context: Context, private readonly cm: ExtendedEditor) {}
+  constructor(private readonly context: Context, private readonly cm: ExtendedEditor) {
+    this.initPanel();
+  }
+
+  private panelEl?: HTMLElement;
+
   async lint(text: string): Promise<CodeMirrorLintMessage[]> {
     const lintResults = await this.context.postMessage<ReturnType<TextLinter['lint']>>({
       event: 'lint',
@@ -59,6 +71,38 @@ export class Linter {
       to: { line: line - 1, ch: column },
     }));
 
+    this.updateCounters(results);
     return results;
+  }
+
+  private initPanel() {
+    this.panelEl = document.createElement('div');
+    this.panelEl.classList.add(PANEL_CLASS_NAME);
+    this.panelEl.innerHTML = `
+        <div class="${PANEL_ITEM_CLASS_NAME}">
+          ${XCircle}
+          <span class=${ERROR_COUNTER_CLASS_NAME}>
+        </div>
+        <div class="${PANEL_ITEM_CLASS_NAME}">
+          ${ExclamationTriangle}
+          <span class=${WARNING_COUNTER_CLASS_NAME}>
+        </div>
+    `;
+
+    this.cm.addPanel(this.panelEl, { position: 'bottom', stable: true });
+  }
+
+  private updateCounters(messages: CodeMirrorLintMessage[]) {
+    if (!this.panelEl) {
+      throw new Error('no els');
+    }
+
+    const errorCount = messages.filter(({ severity }) => severity === 'error').length;
+    const warningCount = messages.length - errorCount;
+    const errorEl = this.panelEl.querySelector(`.${ERROR_COUNTER_CLASS_NAME}`)!;
+    const warningEl = this.panelEl.querySelector(`.${WARNING_COUNTER_CLASS_NAME}`)!;
+
+    errorEl.textContent = String(errorCount);
+    warningEl.textContent = String(warningCount);
   }
 }

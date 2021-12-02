@@ -147,9 +147,8 @@ const baseConfig = {
         exclude: /node_modules/,
       },
       {
-        test: /\.js$/,
-        use: 'shebang-loader',
-        include: /node_modules/,
+        test: /\.svg$/,
+        loader: 'svg-inline-loader',
       },
     ],
   },

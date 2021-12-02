@@ -75,3 +75,35 @@
 .CodeMirror-lint-line-warning {
   background-color: rgba(255, 211, 0, 0.1);
 }
+
+.textlint-panel {
+  width: 100%;
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  display: flex;
+  background-color: #fff;
+  padding-left: 6px;
+  padding-top: 6px;
+}
+
+.textlint-panel-item {
+  margin-right: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.textlint-panel-item > svg {
+  display: inline-block;
+  font-size: inherit;
+  color: inherit;
+  vertical-align: -0.125em;
+  margin-right: 1px;
+  fill: currentColor;
+}
+
+.textlint-panel svg {
+  height: 1em;
+  width: 1em;
+}

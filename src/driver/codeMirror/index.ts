@@ -18,7 +18,7 @@ export default function (context: Context) {
       );
     },
     codeMirrorOptions: { lint: true },
-    codeMirrorResources: ['addon/lint/lint'],
+    codeMirrorResources: ['addon/lint/lint', 'addon/display/panel'],
     assets: () => [{ name: './style.css' }],
   };
 }
