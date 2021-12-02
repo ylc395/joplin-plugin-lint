@@ -1,24 +1,15 @@
-# Joplin Plugin
+# What is _Lint_?
 
-This is a template to create a new Joplin plugin.
+_Lint_, or _linter_, is a kind of tool for programmers to mark source code fragment(s) which doesn't conform to a specific format. Programmers usually use lint to find potential bugs or nonstandard code when they're coding.
 
-The main two files you will want to look at are:
+For non-programmers, lint is also helpful when they hope to keep their writing conformed to specific formats. For example, someone may want to be reminded not to leave `todo:` in text.
 
-- `/src/index.ts`, which contains the entry point for the plugin source code.
-- `/src/manifest.json`, which is the plugin manifest. It contains information such as the plugin a name, version, etc.
+![](./doc/no-todo.png)
 
-## Building the plugin
+[Textlint](https://textlint.github.io/) is an open-source lint tool for daily writing, with [many community-made rules](https://github.com/textlint/textlint/wiki/Collection-of-textlint-rule#contents). Each rule specify a format to check. For example, with [no-todo rule](https://github.com/textlint-rule/textlint-rule-no-todo), textlint will check whether `todo` or `- []` is existing in text.
 
-The plugin is built using Webpack, which creates the compiled code in `/dist`. A JPL archive will also be created at the root, which can use to distribute the plugin.
+Some textlint rules are also fixable, which means they can report and **fix** problems. For example, no-todo rule can remove `todo` mark for you if you choose to do so.
 
-To build the plugin, simply run `npm run dist`.
+# Joplin with textlint
 
-The project is setup to use TypeScript, although you can change the configuration to use plain JavaScript.
-
-## Updating the plugin framework
-
-To update the plugin framework, run `npm run update`.
-
-In general this command tries to do the right thing - in particular it's going to merge the changes in package.json and .gitignore instead of overwriting. It will also leave "/src" as well as README.md untouched.
-
-The file that may cause problem is "webpack.config.js" because it's going to be overwritten. For that reason, if you want to change it, consider creating a separate JavaScript file and include it in webpack.config.js. That way, when you update, you only have to restore the line that include your file.
+With this plugin, you can integrate textlint into Joplin. You can configure rules you like, to let textlint check and report.
