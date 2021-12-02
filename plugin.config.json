@@ -1,0 +1,3 @@
+{
+  "extraScripts": ["driver/codeMirror/index.ts"]
+}
