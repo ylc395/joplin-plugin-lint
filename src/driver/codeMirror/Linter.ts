@@ -66,25 +66,40 @@ export class Linter {
   private messages: LintMessage[] = [];
 
   async lint(text: string): Promise<CodeMirrorLintMessage[]> {
-    const lintResults = await this.context.postMessage<ReturnType<TextLinter['lint']>>({
-      event: 'lint',
-      payload: { text },
-    });
+    const { textlint: textlintResults, markdownlint: markdownlintResults } =
+      await this.context.postMessage<ReturnType<TextLinter['lint']>>({
+        event: 'lint',
+        payload: { text },
+      });
 
-    const results = lintResults.messages.map(({ severity, message, ruleId, line, column }) => ({
-      ruleId,
-      severity: convertSeverity(severity),
-      message,
-      from: { line: line - 1, ch: column - 1 },
-      to: { line: line - 1, ch: column },
-    }));
+    const textlintMessages: LintMessage[] = textlintResults.map(
+      ({ severity, message, ruleId, line, column }) => ({
+        ruleId,
+        severity: convertSeverity(severity),
+        message,
+        from: { line: line - 1, ch: column - 1 },
+        to: { line: line - 1, ch: column },
+      }),
+    );
 
-    this.messages = results;
+    const markdownlintMessages: LintMessage[] = markdownlintResults.map(
+      ({ lineNumber, ruleDescription, ruleNames, errorRange }) => ({
+        message: ruleDescription,
+        severity: 'error',
+        ruleId: ruleNames[0],
+        from: { line: lineNumber - 1, ch: (errorRange?.[0] || 1) - 1 },
+        to: { line: lineNumber - 1, ch: (errorRange?.[0] || 1) + (errorRange?.[1] || 1) - 1 },
+      }),
+    );
+
+    this.messages = [...markdownlintMessages, ...textlintMessages].sort(
+      ({ from: { line: line1 } }, { from: { line: line2 } }) => line1 - line2,
+    );
     this.initPanel();
     this.updateCounters();
     this.updateMessageList();
 
-    return results.map((message) => ({
+    return this.messages.map((message) => ({
       ...message,
       message: `${message.message} [${message.ruleId}]`,
     }));
