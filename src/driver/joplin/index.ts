@@ -22,5 +22,9 @@ export class Joplin {
     );
 
     await joplin.contentScripts.onMessage(SCRIPT_ID, this.handleRequest.bind(this));
+    
+    // run lint immediately after starting
+    const note = await joplin.workspace.selectedNote();
+    await this.handleRequest({event: 'lint', payload: { text: note.body }});
   }
 }
