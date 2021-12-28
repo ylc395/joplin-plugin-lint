@@ -43,6 +43,11 @@ export class Linter {
       pluginsPath: join(dataDir, 'node_modules'),
     });
 
+    // @see https://github.com/textlint/textlint-rule-helper/blob/8697eddc8671b63ac6639094935d72b76a698f8a/package.json#L45
+    await Promise.all([
+      this.pluginManager.installFromNpm('@textlint/types'),
+      this.pluginManager.installFromNpm('@textlint/ast-node-types'),
+    ]);
     const textlint = await this.installTextlint(textlintConfig);
 
     return {
@@ -73,15 +78,21 @@ export class Linter {
 
     const toRule =
       (type: keyof TextlintConfig) =>
-      ({ name, shortName }: { name: string; shortName: string }) => ({
-        ruleId: shortName,
-        rule: this.pluginManager!.require(name).default,
-        options: config[type]?.[shortName],
-      });
+      ({ name, shortName }: { name: string; shortName: string }) => {
+        try {
+          return {
+            ruleId: shortName,
+            rule: this.pluginManager!.require(name).default,
+            options: config[type]?.[shortName],
+          };
+        } catch (error) {
+          return;
+        }
+      };
 
     const finalConfig = {
-      rules: successRuleNames.map(toRule('rules')),
-      filters: successFiltersNames.map(toRule('filters')),
+      rules: compact(successRuleNames.map(toRule('rules'))),
+      filters: compact(successFiltersNames.map(toRule('filters'))),
     };
 
     if (process.env.NODE_ENV === 'development') {
