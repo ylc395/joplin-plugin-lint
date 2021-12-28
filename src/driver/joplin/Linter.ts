@@ -5,20 +5,7 @@ import MarkdownPlugin from '@textlint/textlint-plugin-markdown';
 import { PluginManager } from 'live-plugin-manager';
 import compact from 'lodash.compact';
 import joplin from 'api';
-
-interface TextlintConfig {
-  // @see https://textlint.github.io/docs/configuring.html#rule
-  rules?: Record<string, boolean | Record<string, unknown>>;
-  // @see https://textlint.github.io/docs/configuring.html#filter-rule
-  filters?: Record<string, boolean | Record<string, unknown>>;
-}
-
-interface MarkdownlintConfig {
-  // @see https://github.com/DavidAnson/markdownlint#optionsconfig
-  rules?: Record<string, boolean | Record<string, unknown>>;
-  // @see https://github.com/DavidAnson/markdownlint#optionscustomrules
-  customRules?: Record<string, boolean | Record<string, unknown>>;
-}
+import type { TextlintConfig, MarkdownlintConfig } from '../../domain/config';
 
 const textlintKernel = new TextlintKernel();
 
@@ -26,12 +13,10 @@ const fs = joplin.require('fs-extra');
 
 export class Linter {
   private config = this.install();
-  private failedPackages: string[] = [];
   private pluginManager?: PluginManager;
 
-  async install() {
+  async loadConfigs() {
     const dataDir = await joplin.plugins.dataDir();
-
     let textlintConfig: TextlintConfig;
     let markdownlintConfig: MarkdownlintConfig;
 
@@ -47,6 +32,13 @@ export class Linter {
       markdownlintConfig = {};
     }
 
+    return { textlintConfig, markdownlintConfig };
+  }
+
+  private async install() {
+    const dataDir = await joplin.plugins.dataDir();
+    const { textlintConfig, markdownlintConfig } = await this.loadConfigs();
+
     this.pluginManager = new PluginManager({
       pluginsPath: join(dataDir, 'node_modules'),
     });
@@ -60,39 +52,23 @@ export class Linter {
   }
 
   private async installTextlint(config: TextlintConfig) {
-    const ruleNames = Object.keys(config.rules || {}).map((name) => ({
-      name:
-        name.startsWith('textlint-rule-') || name.startsWith('@') ? name : `textlint-rule-${name}`,
-      shortName: name,
-    }));
-    const filterNames = Object.keys(config.filters || {}).map((name) => ({
-      name: `textlint-filter-rule-${name}`,
-      shortName: name,
-    }));
+    const { ruleNames, filterNames } = getPackageNames(config);
+    const toInstallation = ({ name }: { name: string }) => this.pluginManager!.installFromNpm(name);
+    const [ruleInstallations, filterInstallations] = await Promise.all([
+      Promise.allSettled(ruleNames.map(toInstallation)),
+      Promise.allSettled(filterNames.map(toInstallation)),
+    ]);
 
-    const packageNames = [...ruleNames, ...filterNames];
-    const installations = await Promise.allSettled(
-      packageNames.map(({ name }) => this.pluginManager!.installFromNpm(name)),
-    );
-
-    this.failedPackages.push(
-      ...compact(
-        installations.map(({ status }, index) =>
-          status === 'rejected' ? packageNames[index].name : undefined,
-        ),
+    const successRuleNames = compact(
+      ruleInstallations.map(({ status }, index) =>
+        status === 'fulfilled' ? ruleNames[index] : undefined,
       ),
     );
 
-    const successRuleNames = compact(
-      installations
-        .slice(0, ruleNames.length)
-        .map(({ status }, index) => (status === 'fulfilled' ? ruleNames[index] : undefined)),
-    );
-
     const successFiltersNames = compact(
-      installations
-        .slice(ruleNames.length)
-        .map(({ status }, index) => (status === 'fulfilled' ? filterNames[index] : undefined)),
+      filterInstallations.map(({ status }, index) =>
+        status === 'fulfilled' ? filterNames[index] : undefined,
+      ),
     );
 
     const toRule =
@@ -109,7 +85,6 @@ export class Linter {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(this.failedPackages);
       console.log(finalConfig);
     }
 
@@ -140,4 +115,18 @@ export class Linter {
       markdownlint: markdownlintResult.text,
     };
   }
+}
+
+function getPackageNames(config: TextlintConfig) {
+  return {
+    ruleNames: Object.keys(config.rules || {}).map((name) => ({
+      name:
+        name.startsWith('textlint-rule-') || name.startsWith('@') ? name : `textlint-rule-${name}`,
+      shortName: name,
+    })),
+    filterNames: Object.keys(config.filters || {}).map((name) => ({
+      name: `textlint-filter-rule-${name}`,
+      shortName: name,
+    })),
+  };
 }
