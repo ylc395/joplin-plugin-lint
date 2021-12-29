@@ -199,6 +199,20 @@ const extraScriptConfig = Object.assign({}, baseConfig, {
     },
     extensions: ['.tsx', '.ts', '.js', '.json'],
   },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'node_modules/jsoneditor/dist/img'),
+          to: path.resolve(__dirname, 'dist/driver/dialogView/img'),
+        },
+        {
+          from: path.resolve(__dirname, 'node_modules/jsoneditor/dist/jsoneditor.min.css'),
+          to: path.resolve(__dirname, 'dist/driver/dialogView/jsoneditor.min.css'),
+        },
+      ],
+    }),
+  ],
 });
 
 const createArchiveConfig = {
@@ -222,15 +236,22 @@ function resolveExtraScriptPath(name) {
   const s = name.split('.');
   s.pop();
   const nameNoExt = s.join('.');
+  const isWebview = ['dialogView/index'].some((page) => nameNoExt.endsWith(page));
 
+  const target = isWebview ? 'web' : 'node';
   return {
+    target,
     entry: relativePath,
     output: {
       filename: `${nameNoExt}.js`,
       path: distDir,
-      library: 'default',
-      libraryTarget: 'commonjs',
-      libraryExport: 'default',
+      ...(!isWebview
+        ? {
+            library: 'default',
+            libraryTarget: 'commonjs',
+            libraryExport: 'default',
+          }
+        : {}),
     },
   };
 }
@@ -244,6 +265,7 @@ function buildExtraScriptConfigs(userConfig) {
     const scriptPaths = resolveExtraScriptPath(scriptName);
     output.push(
       Object.assign({}, extraScriptConfig, {
+        target: scriptPaths.target,
         entry: scriptPaths.entry,
         output: scriptPaths.output,
       }),

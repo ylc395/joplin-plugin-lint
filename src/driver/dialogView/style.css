@@ -1,0 +1,19 @@
+#joplin-plugin-content {
+  width: 500px;
+  height: 500px;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden-form {
+  display: none;
+}
+
+.editor-root {
+  flex-grow: 1;
+}

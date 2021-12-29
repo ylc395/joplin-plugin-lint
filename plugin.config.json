@@ -1,3 +1,3 @@
 {
-  "extraScripts": ["driver/codeMirror/index.ts"]
+  "extraScripts": ["driver/codeMirror/index.ts", "driver/dialogView/index.ts"]
 }

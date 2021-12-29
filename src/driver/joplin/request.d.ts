@@ -4,3 +4,7 @@ export interface LintRequest {
     text: string;
   };
 }
+
+export interface LoadConfigsRequest {
+  event: 'loadConfigs';
+}

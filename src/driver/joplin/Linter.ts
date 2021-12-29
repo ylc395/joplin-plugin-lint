@@ -14,34 +14,82 @@ const fs = joplin.require('fs-extra');
 export class Linter {
   private config = this.install();
   private pluginManager?: PluginManager;
+  private dataDir?: string;
+  get textlintFile() {
+    if (!this.dataDir) {
+      throw new Error('no dataDir');
+    }
+    return join(this.dataDir, '.textlintrc.json');
+  }
 
-  async loadConfigs() {
-    const dataDir = await joplin.plugins.dataDir();
+  get markdownlintFile() {
+    if (!this.dataDir) {
+      throw new Error('no dataDir');
+    }
+    return join(this.dataDir, '.markdownlint.json');
+  }
+
+  async loadConfigs(configsText?: { textlintConfigText: string; markdownlintConfigText: string }) {
+    if (!this.dataDir) {
+      this.dataDir = await joplin.plugins.dataDir();
+    }
+    let textlintConfigText = configsText?.textlintConfigText;
+    let markdownlintConfigText = configsText?.markdownlintConfigText;
     let textlintConfig: TextlintConfig;
     let markdownlintConfig: MarkdownlintConfig;
 
-    try {
-      textlintConfig = await fs.readJson(join(dataDir, '.textlintrc.json'));
-    } catch {
-      textlintConfig = { filters: {}, rules: {} };
+    if (typeof textlintConfigText === 'undefined') {
+      try {
+        textlintConfigText = await fs.readFile(this.textlintFile, 'utf-8');
+      } catch {
+        textlintConfigText = '{"rules": {}, "filters": {}}';
+      }
+    }
+
+    if (typeof markdownlintConfigText === 'undefined') {
+      try {
+        markdownlintConfigText = await fs.readFile(this.markdownlintFile, 'utf-8');
+      } catch {
+        markdownlintConfigText = '{"rules": {}}';
+      }
     }
 
     try {
-      markdownlintConfig = await fs.readJson(join(dataDir, '.markdownlint.json'));
+      textlintConfig = JSON.parse(textlintConfigText!);
     } catch {
-      markdownlintConfig = {};
+      textlintConfig = { rules: {} };
     }
 
-    return { textlintConfig, markdownlintConfig };
+    try {
+      markdownlintConfig = JSON.parse(markdownlintConfigText!);
+    } catch {
+      markdownlintConfig = { rules: {} };
+    }
+
+    return { textlintConfig, markdownlintConfig, markdownlintConfigText, textlintConfigText };
   }
 
-  private async install() {
-    const dataDir = await joplin.plugins.dataDir();
-    const { textlintConfig, markdownlintConfig } = await this.loadConfigs();
+  async saveConfigs(configsText: { textlintConfigText: string; markdownlintConfigText: string }) {
+    await Promise.all([
+      fs.writeFile(this.markdownlintFile, configsText.markdownlintConfigText),
+      fs.writeFile(this.textlintFile, configsText.textlintConfigText),
+    ]);
 
-    this.pluginManager = new PluginManager({
-      pluginsPath: join(dataDir, 'node_modules'),
-    });
+    this.config = this.install(configsText);
+  }
+
+  private async install(configsText?: {
+    textlintConfigText: string;
+    markdownlintConfigText: string;
+  }) {
+    const { textlintConfig, markdownlintConfig } = await this.loadConfigs(configsText);
+
+    if (!this.pluginManager) {
+      const dataDir = await joplin.plugins.dataDir();
+      this.pluginManager = new PluginManager({
+        pluginsPath: join(dataDir, 'node_modules'),
+      });
+    }
 
     // @see https://github.com/textlint/textlint-rule-helper/blob/8697eddc8671b63ac6639094935d72b76a698f8a/package.json#L45
     await Promise.all([
