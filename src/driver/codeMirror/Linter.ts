@@ -66,12 +66,22 @@ export class Linter {
   private messages: LintMessage[] = [];
 
   async lint(text: string): Promise<CodeMirrorLintMessage[]> {
-    const { textlint: textlintResults, markdownlint: markdownlintResults } =
-      await this.context.postMessage<ReturnType<TextLinter['lint']>>({
-        event: 'lint',
-        payload: { text },
-      });
+    const result = await this.context.postMessage<ReturnType<TextLinter['lint']> | undefined>({
+      event: 'lint',
+      payload: { text },
+    });
 
+    // main process is not ready
+    if (!result) {
+      return new Promise((resolve) => {
+        setTimeout(async () => {
+          const result = await this.lint(text);
+          resolve(result);
+        }, 1000);
+      });
+    }
+
+    const { textlint: textlintResults, markdownlint: markdownlintResults } = result;
     const textlintMessages: LintMessage[] = textlintResults.map(
       ({ severity, message, ruleId, line, column }) => ({
         ruleId,
